@@ -8,6 +8,7 @@ const DEFAULT_SETTINGS = {
   deleteTypedUrls: true,
   deleteCache: true,
   deleteCookies: true,
+  deleteDownloads: true,
   timeRange: "all"
 };
 
@@ -16,7 +17,8 @@ const checkboxIds = [
   "deleteFormData",
   "deleteTypedUrls",
   "deleteCache",
-  "deleteCookies"
+  "deleteCookies",
+  "deleteDownloads"
 ];
 
 const statusMessageEl = document.getElementById("statusMessage");

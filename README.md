@@ -30,6 +30,7 @@ History-Cleaner/
 - 주소창 입력 기록 (`typed URLs`, `history` API 기반 별도 처리)
 - 캐시 (`cache`)
 - 쿠키 (`cookies`)
+- 다운로드 기록 (`downloads`)
 
 ## 4. 동작 방식 핵심
 
@@ -37,6 +38,7 @@ History-Cleaner/
 2. 선택값은 `chrome.storage.local`의 `cleanupSettings`에 저장됩니다.
 3. Chrome 시작 시 `src/background.js`가 저장값을 읽습니다.
 4. `chrome.browsingData.remove({ since: 0 }, dataTypes)`로 전체 기간 데이터를 삭제합니다.
+   - 여기에는 다운로드 기록(`downloads`)도 포함됩니다.
 5. `방문 기록`이 켜져 있으면 `chrome.history.deleteAll()`을 한 번 더 호출해 주소창 기록 잔존을 줄입니다.
 6. 단, `방문 기록 OFF + typed URLs ON`인 경우에는 `chrome.history` API로 주소창 전이(`typed`, `generated`, `keyword*`) 기반 URL을 추가 삭제합니다.
 7. 시작 직후 동기화로 기록이 다시 보일 수 있어, 1분 뒤 `chrome.alarms`로 한 번 더 정리합니다.
@@ -65,3 +67,4 @@ History-Cleaner/
   - 그래서 UI에서 방문 기록 ON 상태일 때 typed URLs는 자동 ON + 비활성 처리됩니다.
 - 주소창 제안은 방문 기록 외에도 북마크, 동기화된 기록, 검색엔진 실시간 제안이 섞일 수 있습니다.
   - 따라서 `typed URLs`만 켠 상태는 best-effort 정리이며, 주소창 제안을 강하게 줄이려면 `방문 기록`도 함께 켜는 것이 안전합니다.
+- 다운로드 항목은 파일 자체가 아니라 다운로드 목록(기록) 정리입니다.

@@ -23,6 +23,7 @@ const DEFAULT_SETTINGS = {
   deleteTypedUrls: true,
   deleteCache: true,
   deleteCookies: true,
+  deleteDownloads: true,
   timeRange: "all"
 };
 
@@ -49,7 +50,9 @@ function buildRemovalDataTypes(settings) {
     history: settings.deleteHistory,
     formData: settings.deleteFormData,
     cache: settings.deleteCache,
-    cookies: settings.deleteCookies
+    cookies: settings.deleteCookies,
+    // 다운로드 "파일"이 아니라 다운로드 "기록(목록)"을 정리합니다.
+    downloads: settings.deleteDownloads
   };
 }
 
