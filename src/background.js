@@ -23,6 +23,7 @@ const DEFAULT_SETTINGS = {
   deleteTypedUrls: true,
   deleteCache: true,
   deleteCookies: true,
+  deleteDownloads: true,
   timeRange: "all"
 };
 
@@ -49,7 +50,9 @@ function buildRemovalDataTypes(settings) {
     history: settings.deleteHistory,
     formData: settings.deleteFormData,
     cache: settings.deleteCache,
-    cookies: settings.deleteCookies
+    cookies: settings.deleteCookies,
+    // 다운로드 "파일"이 아니라 다운로드 "기록(목록)"을 정리합니다.
+    downloads: settings.deleteDownloads
   };
 }
 
@@ -166,10 +169,28 @@ async function runCleanupOnStartup(reason = "startup") {
       );
     }
 
+    // 일부 환경에서는 browsingData.remove({history:true}) 후에도
+    // 주소창 제안이 남는 케이스가 있어 history API로 한 번 더 강제 정리합니다.
+    if (settings.deleteHistory) {
+      await chrome.history.deleteAll();
+    }
+
     // 방문 기록을 직접 삭제하지 않을 때만 typed URLs 분리 삭제가 필요합니다.
     if (!settings.deleteHistory && settings.deleteTypedUrls) {
       await clearTypedUrlsOnly();
     }
+
+    // 디버깅용 probe: 실제 히스토리 저장소가 비었는지 확인합니다.
+    const historyProbe = await chrome.history.search({
+      text: "",
+      startTime: 0,
+      maxResults: 1
+    });
+    console.log(
+      `History Cleaner: history probe after cleanup (${reason}) => ${
+        historyProbe.length === 0 ? "empty" : "not-empty"
+      }`
+    );
 
     console.log(`History Cleaner: cleanup completed (${reason})`);
   } catch (error) {
