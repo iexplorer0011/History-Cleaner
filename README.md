@@ -7,6 +7,12 @@
 ```text
 History-Cleaner/
 ├── manifest.json
+├── assets/
+│   └── icons/
+│       ├── favicon-16x16.png
+│       ├── favicon-32x32.png
+│       ├── android-chrome-192x192.png
+│       └── android-chrome-512x512.png
 ├── src/
 │   ├── background.js
 │   ├── popup.html
@@ -18,6 +24,7 @@ History-Cleaner/
 ## 2. 파일 역할
 
 - `manifest.json`: 확장 프로그램 메타 정보, 권한, 백그라운드 서비스 워커, 팝업 등록
+- `assets/icons/*`: 확장 프로그램/툴바 아이콘 이미지
 - `src/background.js`: 시작 시 자동 삭제 실행 로직
 - `src/popup.html`: 체크박스 기반 설정 UI
 - `src/popup.css`: 팝업 스타일
