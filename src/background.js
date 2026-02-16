@@ -1,4 +1,21 @@
 const STORAGE_KEY = "cleanupSettings";
+const STARTUP_RETRY_ALARM_NAME = "historyCleanerStartupRetry";
+const STARTUP_RETRY_DELAY_MINUTES = 1;
+const MAX_HISTORY_RESULTS = 1000000;
+const MAX_VISIT_SCAN_ITEMS = 5000;
+const VISIT_SCAN_BATCH_SIZE = 100;
+const DELETE_BATCH_SIZE = 200;
+
+// 주소창 입력/생성 기반 방문 전이 타입입니다.
+// 참고: Chrome history API 문서의 VisitItem.transition 타입
+const ADDRESS_BAR_TRANSITIONS = new Set([
+  "typed",
+  "generated",
+  "keyword",
+  "keyword_generated"
+]);
+
+let cleanupInProgress = false;
 
 const DEFAULT_SETTINGS = {
   deleteHistory: true,
@@ -68,18 +85,53 @@ async function clearTypedUrlsOnly() {
   const historyItems = await chrome.history.search({
     text: "",
     startTime: 0,
-    maxResults: 1000000
+    maxResults: MAX_HISTORY_RESULTS
   });
 
-  const typedUrls = historyItems
-    .filter((item) => item.typedCount && item.typedCount > 0 && item.url)
-    .map((item) => item.url);
+  // 1) typedCount로 바로 식별되는 URL 수집
+  const typedUrlSet = new Set(
+    historyItems
+      .filter((item) => item.typedCount && item.typedCount > 0 && item.url)
+      .map((item) => item.url)
+  );
+
+  // 2) typedCount로 잡히지 않는 주소창 기록을 보완하기 위해 visit transition 검사
+  //    (성능 보호를 위해 최근 항목 일부만 검사)
+  const visitScanTargets = historyItems
+    .filter((item) => item.url && !(item.typedCount && item.typedCount > 0))
+    .slice(0, MAX_VISIT_SCAN_ITEMS);
+
+  const visitBatches = chunkArray(visitScanTargets, VISIT_SCAN_BATCH_SIZE);
+
+  for (const batch of visitBatches) {
+    const visitResults = await Promise.allSettled(
+      batch.map((item) => chrome.history.getVisits({ url: item.url }))
+    );
+
+    for (let index = 0; index < visitResults.length; index += 1) {
+      const result = visitResults[index];
+      if (result.status !== "fulfilled") {
+        continue;
+      }
+
+      const visits = result.value || [];
+      const hasAddressBarTransition = visits.some((visit) =>
+        ADDRESS_BAR_TRANSITIONS.has(visit.transition)
+      );
+
+      if (hasAddressBarTransition) {
+        typedUrlSet.add(batch[index].url);
+      }
+    }
+  }
+
+  const typedUrls = Array.from(typedUrlSet);
 
   if (typedUrls.length === 0) {
     return;
   }
 
-  const batches = chunkArray(typedUrls, 200);
+  const batches = chunkArray(typedUrls, DELETE_BATCH_SIZE);
 
   for (const batch of batches) {
     const tasks = batch.map((url) => chrome.history.deleteUrl({ url }));
@@ -90,7 +142,14 @@ async function clearTypedUrlsOnly() {
 /**
  * 브라우저 시작 시 실행되는 핵심 정리 함수입니다.
  */
-async function runCleanupOnStartup() {
+async function runCleanupOnStartup(reason = "startup") {
+  if (cleanupInProgress) {
+    console.log(`History Cleaner: cleanup skipped (${reason}) because another cleanup is running`);
+    return;
+  }
+
+  cleanupInProgress = true;
+
   try {
     const settings = await getCleanupSettings();
     const dataToRemove = buildRemovalDataTypes(settings);
@@ -112,10 +171,12 @@ async function runCleanupOnStartup() {
       await clearTypedUrlsOnly();
     }
 
-    console.log("History Cleaner: startup cleanup completed");
+    console.log(`History Cleaner: cleanup completed (${reason})`);
   } catch (error) {
     // 서비스 워커는 조용히 종료될 수 있으므로 오류를 명확히 남깁니다.
-    console.error("History Cleaner: startup cleanup failed", error);
+    console.error(`History Cleaner: cleanup failed (${reason})`, error);
+  } finally {
+    cleanupInProgress = false;
   }
 }
 
@@ -129,6 +190,17 @@ async function ensureDefaultSettings() {
   }
 }
 
+/**
+ * Chrome 시작 직후에는 동기화된 기록이 나중에 다시 들어오는 경우가 있어
+ * 1분 뒤 한 번 더 정리 작업을 수행합니다.
+ */
+async function scheduleStartupRetryCleanup() {
+  await chrome.alarms.clear(STARTUP_RETRY_ALARM_NAME);
+  chrome.alarms.create(STARTUP_RETRY_ALARM_NAME, {
+    delayInMinutes: STARTUP_RETRY_DELAY_MINUTES
+  });
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
   try {
     await ensureDefaultSettings();
@@ -139,5 +211,14 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 // 안정성이 높은 시작 시점 자동 정리 이벤트
 chrome.runtime.onStartup.addListener(async () => {
-  await runCleanupOnStartup();
+  await runCleanupOnStartup("startup");
+  await scheduleStartupRetryCleanup();
+});
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name !== STARTUP_RETRY_ALARM_NAME) {
+    return;
+  }
+
+  await runCleanupOnStartup("startup-retry");
 });

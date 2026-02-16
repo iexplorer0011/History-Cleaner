@@ -3,7 +3,7 @@
   "name": "History Cleaner",
   "description": "Automatically clears selected browsing data when Chrome starts.",
   "version": "1.0.0",
-  "permissions": ["browsingData", "storage", "history"],
+  "permissions": ["browsingData", "storage", "history", "alarms"],
   "background": {
     "service_worker": "src/background.js"
   },

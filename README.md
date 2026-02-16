@@ -37,7 +37,8 @@ History-Cleaner/
 2. 선택값은 `chrome.storage.local`의 `cleanupSettings`에 저장됩니다.
 3. Chrome 시작 시 `src/background.js`가 저장값을 읽습니다.
 4. `chrome.browsingData.remove({ since: 0 }, dataTypes)`로 전체 기간 데이터를 삭제합니다.
-5. 단, `방문 기록 OFF + typed URLs ON`인 경우에는 `chrome.history` API로 `typedCount > 0` URL만 추가 삭제합니다.
+5. 단, `방문 기록 OFF + typed URLs ON`인 경우에는 `chrome.history` API로 주소창 전이(`typed`, `generated`, `keyword*`) 기반 URL을 추가 삭제합니다.
+6. 시작 직후 동기화로 기록이 다시 보일 수 있어, 1분 뒤 `chrome.alarms`로 한 번 더 정리합니다.
 
 ## 5. 설치 방법 (개발자 모드)
 
@@ -61,3 +62,5 @@ History-Cleaner/
 - 종료 시점 자동 삭제는 MV3 서비스 워커 특성상 신뢰성이 낮아 포함하지 않았습니다.
 - 방문 기록 삭제를 켜면 typed URLs는 방문 기록에 포함되어 함께 삭제됩니다.
   - 그래서 UI에서 방문 기록 ON 상태일 때 typed URLs는 자동 ON + 비활성 처리됩니다.
+- 주소창 제안은 방문 기록 외에도 북마크, 동기화된 기록, 검색엔진 실시간 제안이 섞일 수 있습니다.
+  - 따라서 `typed URLs`만 켠 상태는 best-effort 정리이며, 주소창 제안을 강하게 줄이려면 `방문 기록`도 함께 켜는 것이 안전합니다.
