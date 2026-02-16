@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "History Cleaner",
+  "description": "Automatically clears selected browsing data when Chrome starts.",
+  "version": "1.0.0",
+  "permissions": ["browsingData", "storage", "history"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "History Cleaner",
+    "default_popup": "popup.html"
+  }
+}
