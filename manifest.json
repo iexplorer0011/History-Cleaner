@@ -5,10 +5,10 @@
   "version": "1.0.0",
   "permissions": ["browsingData", "storage", "history"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background.js"
   },
   "action": {
     "default_title": "History Cleaner",
-    "default_popup": "popup.html"
+    "default_popup": "src/popup.html"
   }
 }

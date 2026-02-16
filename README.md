@@ -7,20 +7,21 @@
 ```text
 History-Cleaner/
 ├── manifest.json
-├── background.js
-├── popup.html
-├── popup.css
-├── popup.js
+├── src/
+│   ├── background.js
+│   ├── popup.html
+│   ├── popup.css
+│   └── popup.js
 └── README.md
 ```
 
 ## 2. 파일 역할
 
 - `manifest.json`: 확장 프로그램 메타 정보, 권한, 백그라운드 서비스 워커, 팝업 등록
-- `background.js`: 시작 시 자동 삭제 실행 로직
-- `popup.html`: 체크박스 기반 설정 UI
-- `popup.css`: 팝업 스타일
-- `popup.js`: 설정 불러오기/저장/의존성(방문 기록-typed URLs) 제어
+- `src/background.js`: 시작 시 자동 삭제 실행 로직
+- `src/popup.html`: 체크박스 기반 설정 UI
+- `src/popup.css`: 팝업 스타일
+- `src/popup.js`: 설정 불러오기/저장/의존성(방문 기록-typed URLs) 제어
 
 ## 3. 삭제 대상 항목
 
@@ -34,7 +35,7 @@ History-Cleaner/
 
 1. 사용자가 팝업에서 체크박스를 선택/해제합니다.
 2. 선택값은 `chrome.storage.local`의 `cleanupSettings`에 저장됩니다.
-3. Chrome 시작 시 `background.js`가 저장값을 읽습니다.
+3. Chrome 시작 시 `src/background.js`가 저장값을 읽습니다.
 4. `chrome.browsingData.remove({ since: 0 }, dataTypes)`로 전체 기간 데이터를 삭제합니다.
 5. 단, `방문 기록 OFF + typed URLs ON`인 경우에는 `chrome.history` API로 `typedCount > 0` URL만 추가 삭제합니다.
 
