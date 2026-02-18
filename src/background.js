@@ -1,6 +1,6 @@
 const STORAGE_KEY = "cleanupSettings";
 const STARTUP_RETRY_ALARM_NAME = "historyCleanerStartupRetry";
-const STARTUP_RETRY_DELAY_MINUTES = 1;
+const STARTUP_RETRY_DELAY_MS = 10 * 1000;
 const MAX_HISTORY_RESULTS = 1000000;
 const MAX_VISIT_SCAN_ITEMS = 5000;
 const VISIT_SCAN_BATCH_SIZE = 100;
@@ -213,12 +213,12 @@ async function ensureDefaultSettings() {
 
 /**
  * Chrome 시작 직후에는 동기화된 기록이 나중에 다시 들어오는 경우가 있어
- * 1분 뒤 한 번 더 정리 작업을 수행합니다.
+ * 10초 뒤 한 번 더 정리 작업을 수행합니다.
  */
 async function scheduleStartupRetryCleanup() {
   await chrome.alarms.clear(STARTUP_RETRY_ALARM_NAME);
   chrome.alarms.create(STARTUP_RETRY_ALARM_NAME, {
-    delayInMinutes: STARTUP_RETRY_DELAY_MINUTES
+    when: Date.now() + STARTUP_RETRY_DELAY_MS
   });
 }
 
